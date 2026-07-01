@@ -61,9 +61,9 @@ export default function DataPreviewTable({ data }: DataPreviewTableProps) {
         <p className="text-sm text-muted-foreground mb-4">
           Menampilkan {previewData.length} dari {data.length} baris.
         </p>
-        <div className="rounded-md border">
+        <div className="rounded-md border overflow-auto max-h-96">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-background z-10">
               <TableRow>
                 {COLUMNS.map((col) => (
                   <TableHead key={col.key} className="whitespace-nowrap">
