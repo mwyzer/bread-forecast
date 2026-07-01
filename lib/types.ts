@@ -1,4 +1,5 @@
 export type RiskLevel = "Rendah" | "Sedang" | "Tinggi";
+export type TrendLevel = "naik" | "turun" | "stabil";
 
 export type D9012Transaction = {
   dropping_date: string;
@@ -28,6 +29,7 @@ export type ForecastResult = {
   safety_stock: number;
   recommended_qty: number;
   risk_level: RiskLevel;
+  trend: TrendLevel;
 };
 
 export type ForecastSummary = {

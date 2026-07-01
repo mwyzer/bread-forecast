@@ -10,12 +10,38 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Table2 } from "lucide-react";
+import { Table2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { ForecastResult } from "@/lib/types";
 
 type ForecastResultTableProps = {
   data: ForecastResult[];
 };
+
+function getTrendBadge(trend: string) {
+  switch (trend) {
+    case "naik":
+      return (
+        <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-300 gap-1">
+          <TrendingUp className="h-3 w-3" />
+          Naik
+        </Badge>
+      );
+    case "turun":
+      return (
+        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-300 gap-1">
+          <TrendingDown className="h-3 w-3" />
+          Turun
+        </Badge>
+      );
+    default:
+      return (
+        <Badge className="bg-gray-100 text-gray-600 hover:bg-gray-100 border-gray-300 gap-1">
+          <Minus className="h-3 w-3" />
+          Stabil
+        </Badge>
+      );
+  }
+}
 
 function getRiskBadge(risk: string) {
   switch (risk) {
@@ -112,6 +138,7 @@ export default function ForecastResultTable({
                   Recommended Qty
                 </TableHead>
                 <TableHead className="whitespace-nowrap">Risk Level</TableHead>
+                <TableHead className="whitespace-nowrap">Tren</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -150,6 +177,7 @@ export default function ForecastResultTable({
                     {row.recommended_qty.toLocaleString()}
                   </TableCell>
                   <TableCell>{getRiskBadge(row.risk_level)}</TableCell>
+                  <TableCell>{getTrendBadge(row.trend)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
