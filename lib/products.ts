@@ -1,0 +1,85 @@
+import { ProductInfo } from "./types";
+
+/**
+ * Master product catalog — 67 SKUs from the Weekly Estimasi Order template.
+ * Short names must match the column headers in the Excel sheet.
+ */
+export const PRODUCT_CATALOG: ProductInfo[] = [
+  { shortName: "RTSII", price: 15000 },
+  { shortName: "RTGII", price: 22000 },
+  { shortName: "RTPDM2", price: 19000 },
+  { shortName: "RCC2", price: 19500 },
+  { shortName: "RTKL", price: 13500 },
+  { shortName: "SCK2", price: 6000 },
+  { shortName: "SAB2", price: 6000 },
+  { shortName: "SAP2", price: 6000 },
+  { shortName: "SKJ2", price: 6000 },
+  { shortName: "SSM2", price: 6000 },
+  { shortName: "RKU2", price: 18000 },
+  { shortName: "RJKU II", price: 21000 },
+  { shortName: "RMS II", price: 14500 },
+  { shortName: "ZSCCK", price: 5000 },
+  { shortName: "ZSCM", price: 5000 },
+  { shortName: "ZSCS", price: 5000 },
+  { shortName: "RJTS500", price: 18000 },
+  { shortName: "RJMS500", price: 18000 },
+  { shortName: "SCB", price: 6000 },
+  { shortName: "ZSCST", price: 5000 },
+  { shortName: "SGK", price: 6000 },
+  { shortName: "DOT", price: 19500 },
+  { shortName: "ICK GT II", price: 4500 },
+  { shortName: "ICC II GT", price: 4500 },
+  { shortName: "ISC GT", price: 4500 },
+  { shortName: "IST GT", price: 4500 },
+  { shortName: "IBL GT", price: 4500 },
+  { shortName: "ICO GT", price: 4500 },
+  { shortName: "IGC", price: 6000 },
+  { shortName: "SRC III", price: 5500 },
+  { shortName: "SCC III", price: 5500 },
+  { shortName: "SRM III", price: 5500 },
+  { shortName: "ZCRCC", price: 5500 },
+  { shortName: "ZCRCR", price: 5500 },
+  { shortName: "ZCRCB", price: 5500 },
+  { shortName: "SRS", price: 5500 },
+  { shortName: "ZCRGC", price: 6000 },
+  { shortName: "DIC", price: 6500 },
+  { shortName: "DCP", price: 6500 },
+  { shortName: "DHF", price: 6000 },
+  { shortName: "DST", price: 6500 },
+  { shortName: "DPS", price: 6500 },
+  { shortName: "DNS", price: 6500 },
+  { shortName: "RKJ2", price: 15000 },
+  { shortName: "RSM2", price: 11500 },
+  { shortName: "RKS2", price: 12000 },
+  { shortName: "TOCII5S", price: 18000 },
+  { shortName: "TCCII5S", price: 18000 },
+  { shortName: "TCSII5S", price: 18000 },
+  { shortName: "TSTII5S", price: 19000 },
+  { shortName: "TCBII5S", price: 19000 },
+  { shortName: "KKM", price: 12500 },
+  { shortName: "RMNC", price: 8000 },
+  { shortName: "RMNS", price: 8000 },
+  { shortName: "TDOC 72", price: 9000 },
+  { shortName: "TDCC 72", price: 9000 },
+  { shortName: "TDCS 72", price: 9000 },
+  { shortName: "BURII", price: 11000 },
+  { shortName: "CCC", price: 5000 },
+  { shortName: "CCP", price: 5000 },
+  { shortName: "CCMS", price: 5000 },
+  { shortName: "STCB", price: 10000 },
+  { shortName: "BMO", price: 5000 },
+  { shortName: "WFO", price: 5000 },
+  { shortName: "STCDC", price: 7000 },
+  { shortName: "MNC", price: 6000 },
+  { shortName: "BKOR", price: 11000 },
+];
+
+/** Map shortName → ProductInfo for O(1) lookup */
+export const PRODUCT_MAP: Map<string, ProductInfo> = new Map(
+  PRODUCT_CATALOG.map((p) => [p.shortName, p]),
+);
+
+/** Ordered list of product short names matching column order in Excel */
+export const PRODUCT_SHORT_NAMES: string[] = PRODUCT_CATALOG.map(
+  (p) => p.shortName,
+);

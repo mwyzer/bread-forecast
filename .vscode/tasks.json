@@ -6,6 +6,18 @@
 			"type": "shell",
 			"command": "npm install",
 			"group": "none"
+		},
+		{
+			"label": "Next.js Dev Server",
+			"type": "shell",
+			"command": "node",
+			"args": [
+				"node_modules/next/dist/cli/next-dev.js",
+				"-p",
+				"3000"
+			],
+			"isBackground": true,
+			"problemMatcher": []
 		}
 	]
 }

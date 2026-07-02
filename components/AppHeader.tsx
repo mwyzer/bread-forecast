@@ -10,17 +10,17 @@ export default function AppHeader() {
         <Croissant className="h-8 w-8 text-amber-600" />
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
-            Bread Forecasting Excel App
+            Estimasi Order Mingguan
           </h1>
           <p className="text-muted-foreground text-sm">
-            Forecasting estimasi alokasi roti ke toko berdasarkan Excel
-            reporting D9012.
+            Upload, edit, kalkulasi, rekap, dan export estimasi order mingguan
+            per toko &amp; produk.
           </p>
         </div>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Badge variant="secondary">No Database</Badge>
-        <Badge variant="secondary">Excel Forecasting</Badge>
+        <Badge variant="secondary">67 SKU</Badge>
+        <Badge variant="secondary">CBP / RBP / RBP Net</Badge>
         <Badge variant="secondary">Next.js</Badge>
       </div>
     </div>

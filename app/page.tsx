@@ -1,76 +1,95 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { D9012Transaction, ForecastResult, ForecastSummary } from "@/lib/types";
-import { generateSummary } from "@/lib/summary";
-import { generateForecast } from "@/lib/forecast";
+import { EstimasiWorkbook } from "@/lib/types";
+import {
+  generateGrandTotals,
+  generateSalesmanSummaries,
+  generateRekap,
+  generateRekapByType,
+} from "@/lib/summary";
 import AppHeader from "@/components/AppHeader";
 import UploadExcelCard from "@/components/UploadExcelCard";
 import SummaryCards from "@/components/SummaryCards";
 import DataPreviewTable from "@/components/DataPreviewTable";
-import ForecastAction from "@/components/ForecastAction";
-import ForecastFilter from "@/components/ForecastFilter";
-import ForecastResultTable from "@/components/ForecastResultTable";
-import DownloadForecastButton from "@/components/DownloadForecastButton";
+import CalculateAction from "@/components/ForecastAction";
+import EstimasiFilter from "@/components/ForecastFilter";
+import EstimasiOrderTable from "@/components/ForecastResultTable";
+import DownloadEstimasiButton from "@/components/DownloadForecastButton";
 
 export default function Home() {
-  const [transactions, setTransactions] = useState<D9012Transaction[]>([]);
-  const [summary, setSummary] = useState<ForecastSummary | null>(null);
-  const [forecastResults, setForecastResults] = useState<ForecastResult[]>([]);
+  const [workbook, setWorkbook] = useState<EstimasiWorkbook | null>(null);
+  const [calculated, setCalculated] = useState(false);
 
   // Filter & sort states
-  const [searchOutlet, setSearchOutlet] = useState("");
-  const [searchProduct, setSearchProduct] = useState("");
-  const [riskLevel, setRiskLevel] = useState("Semua");
-  const [sortBy, setSortBy] = useState("return_rate_desc");
+  const [searchStore, setSearchStore] = useState("");
+  const [storeType, setStoreType] = useState("Semua");
+  const [salesmanCode, setSalesmanCode] = useState("Semua");
+  const [sortBy, setSortBy] = useState("qty_desc");
 
-  function handleDataLoaded(data: D9012Transaction[]) {
-    setTransactions(data);
-    setSummary(generateSummary(data));
-    setForecastResults([]);
+  function handleDataLoaded(wb: EstimasiWorkbook) {
+    setWorkbook(wb);
+    setCalculated(false);
   }
 
-  function handleGenerateForecast() {
-    const results = generateForecast(transactions);
-    setForecastResults(results);
+  function handleCalculate() {
+    if (!workbook) return;
+    // Recompute summaries (already computed on import, but this ensures freshness)
+    const updatedWorkbook: EstimasiWorkbook = {
+      ...workbook,
+      salesmanSummaries: generateSalesmanSummaries(workbook.stores),
+      grandTotals: generateGrandTotals(workbook.stores),
+      rekap: generateRekap(workbook.stores),
+      rekapByType: generateRekapByType(workbook.stores),
+    };
+    setWorkbook(updatedWorkbook);
+    setCalculated(true);
   }
 
-  const filteredForecastResults = useMemo(() => {
-    return forecastResults
-      .filter((item) => {
-        const outletMatch =
-          item.outlet_name.toLowerCase().includes(searchOutlet.toLowerCase()) ||
-          item.outlet_code.toLowerCase().includes(searchOutlet.toLowerCase());
+  // Derive unique filter values
+  const storeTypes = useMemo(() => {
+    if (!workbook) return [];
+    return [...new Set(workbook.stores.map((s) => s.storeType))].sort();
+  }, [workbook]);
 
-        const productMatch =
-          item.product_name
-            .toLowerCase()
-            .includes(searchProduct.toLowerCase()) ||
-          item.product_code.toLowerCase().includes(searchProduct.toLowerCase());
+  const salesmanCodes = useMemo(() => {
+    if (!workbook) return [];
+    const map = new Map<string, string>();
+    for (const s of workbook.stores) {
+      map.set(s.salesmanCode, s.salesmanName);
+    }
+    return Array.from(map.entries()).map(([code, name]) => ({ code, name }));
+  }, [workbook]);
 
-        const riskMatch =
-          riskLevel === "Semua" || item.risk_level === riskLevel;
-
-        return outletMatch && productMatch && riskMatch;
+  // Filter + sort stores
+  const filteredStores = useMemo(() => {
+    if (!workbook) return [];
+    return workbook.stores
+      .filter((s) => {
+        const storeMatch = s.store
+          .toLowerCase()
+          .includes(searchStore.toLowerCase());
+        const typeMatch = storeType === "Semua" || s.storeType === storeType;
+        const smMatch =
+          salesmanCode === "Semua" || s.salesmanCode === salesmanCode;
+        return storeMatch && typeMatch && smMatch;
       })
       .sort((a, b) => {
         switch (sortBy) {
-          case "recommended_qty_desc":
-            return b.recommended_qty - a.recommended_qty;
-          case "total_retur_desc":
-            return b.total_retur_qty - a.total_retur_qty;
-          case "total_dropping_desc":
-            return b.total_dropping_qty - a.total_dropping_qty;
-          case "outlet_name_asc":
-            return a.outlet_name.localeCompare(b.outlet_name);
-          case "product_name_asc":
-            return a.product_name.localeCompare(b.product_name);
-          case "return_rate_desc":
+          case "qty_asc":
+            return a.totalQty - b.totalQty;
+          case "cbp_desc":
+            return b.cbp - a.cbp;
+          case "items_desc":
+            return b.itemCount - a.itemCount;
+          case "store_asc":
+            return a.store.localeCompare(b.store);
+          case "qty_desc":
           default:
-            return b.return_rate - a.return_rate;
+            return b.totalQty - a.totalQty;
         }
       });
-  }, [forecastResults, searchOutlet, searchProduct, riskLevel, sortBy]);
+  }, [workbook, searchStore, storeType, salesmanCode, sortBy]);
 
   return (
     <main className="min-h-screen bg-background">
@@ -79,35 +98,42 @@ export default function Home() {
 
         <UploadExcelCard onDataLoaded={handleDataLoaded} />
 
-        <SummaryCards summary={summary} />
+        {workbook && (
+          <SummaryCards
+            totals={workbook.grandTotals}
+            storeCount={workbook.stores.length}
+            productCount={workbook.products.length}
+          />
+        )}
 
-        <DataPreviewTable data={transactions} />
+        <DataPreviewTable stores={workbook?.stores ?? []} />
 
-        <ForecastAction
-          disabled={transactions.length === 0}
-          onGenerate={handleGenerateForecast}
+        <CalculateAction
+          disabled={!workbook || workbook.stores.length === 0}
+          onCalculate={handleCalculate}
         />
 
-        {forecastResults.length > 0 && (
-          <ForecastFilter
-            searchOutlet={searchOutlet}
-            searchProduct={searchProduct}
-            riskLevel={riskLevel}
+        {calculated && workbook && (
+          <EstimasiFilter
+            searchStore={searchStore}
+            storeType={storeType}
+            salesmanCode={salesmanCode}
             sortBy={sortBy}
-            onSearchOutletChange={setSearchOutlet}
-            onSearchProductChange={setSearchProduct}
-            onRiskLevelChange={setRiskLevel}
+            storeTypes={storeTypes}
+            salesmanCodes={salesmanCodes}
+            onSearchStoreChange={setSearchStore}
+            onStoreTypeChange={setStoreType}
+            onSalesmanCodeChange={setSalesmanCode}
             onSortByChange={setSortBy}
           />
         )}
 
-        <ForecastResultTable data={filteredForecastResults} />
-
-        <DownloadForecastButton
-          rawData={transactions}
-          forecastData={forecastResults}
-          summary={summary}
+        <EstimasiOrderTable
+          stores={filteredStores}
+          products={workbook?.products ?? []}
         />
+
+        <DownloadEstimasiButton workbook={workbook} />
       </div>
     </main>
   );

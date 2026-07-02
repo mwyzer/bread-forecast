@@ -4,58 +4,64 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   Store,
   Package,
-  TrendingDown,
-  RotateCcw,
-  Percent,
-  BarChart3,
+  DollarSign,
+  Receipt,
+  Calculator,
+  Layers,
 } from "lucide-react";
-import { ForecastSummary } from "@/lib/types";
+import { GrandTotals } from "@/lib/types";
 
 type SummaryCardsProps = {
-  summary: ForecastSummary | null;
+  totals: GrandTotals | null;
+  storeCount: number;
+  productCount: number;
 };
 
-export default function SummaryCards({ summary }: SummaryCardsProps) {
-  const summaryItems = [
+export default function SummaryCards({
+  totals,
+  storeCount,
+  productCount,
+}: SummaryCardsProps) {
+  const items = [
     {
-      label: "Total Outlet",
-      value: summary ? summary.total_outlet.toLocaleString() : "-",
+      label: "Total Toko",
+      value: storeCount.toLocaleString(),
       icon: Store,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
-      label: "Total Produk",
-      value: summary ? summary.total_product.toLocaleString() : "-",
+      label: "Total SKU",
+      value: productCount.toLocaleString(),
       icon: Package,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
     },
     {
-      label: "Total Dropping Qty",
-      value: summary ? summary.total_dropping_qty.toLocaleString() : "-",
-      icon: TrendingDown,
+      label: "Total QTY",
+      value: totals ? totals.totalQty.toLocaleString() : "-",
+      icon: Layers,
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
     },
     {
-      label: "Total Retur",
-      value: summary ? summary.total_retur_qty.toLocaleString() : "-",
-      icon: RotateCcw,
+      label: "Total CBP",
+      value: totals ? `Rp ${totals.totalCbp.toLocaleString()}` : "-",
+      icon: Calculator,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
     },
     {
-      label: "Total Net Qty",
-      value: summary ? summary.total_net_qty.toLocaleString() : "-",
-      icon: BarChart3,
+      label: "Total RBP",
+      value: totals ? `Rp ${totals.totalRbp.toLocaleString()}` : "-",
+      icon: Receipt,
       color: "text-indigo-600",
       bgColor: "bg-indigo-50",
     },
     {
-      label: "Return Rate",
-      value: summary ? `${(summary.return_rate * 100).toFixed(2)}%` : "-",
-      icon: Percent,
+      label: "Total RBP Net",
+      value: totals ? `Rp ${totals.totalRbpNet.toLocaleString()}` : "-",
+      icon: DollarSign,
       color: "text-red-600",
       bgColor: "bg-red-50",
     },
@@ -63,7 +69,7 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-      {summaryItems.map((item) => (
+      {items.map((item) => (
         <Card key={item.label}>
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">

@@ -1,31 +1,145 @@
-import { D9012Transaction } from "./types";
+import { EstimasiOrderRow, ProductInfo } from "./types";
+import { PRODUCT_MAP } from "./products";
 
-const REQUIRED_COLUMNS = [
-  "DROPPING DATE",
-  "OUTLET CODE",
-  "OUTLET NAME",
-  "PRODUCT CODE",
-  "PRODUCT NAME",
-  "DROPPING QTY",
-  "RETUR BS QTY",
-  "RETUR BAIK QTY",
-  "NET QTY",
-] as const;
-
-const NUMERIC_COLUMNS = [
-  "DROPPING QTY",
-  "RETUR BS QTY",
-  "RETUR BAIK QTY",
-  "NET QTY",
+/**
+ * Required base columns for the Weekly Estimasi Order template.
+ * Product columns (short names) are validated dynamically from the product catalog.
+ */
+const REQUIRED_BASE_COLUMNS = [
+  "NO",
+  "TANGGAL",
+  "SALESMAN CODE",
+  "SALESMAN NAME",
+  "STORE",
+  "STORE TYPE",
+  "CLASSIFICATION",
+  "SALES TYPE",
+  "DISC %",
 ] as const;
 
 /**
- * Validate and transform raw Excel rows into D9012Transaction objects.
- * Returns validation result with valid data and list of errors.
+ * Validate that raw parsed rows have the expected base columns.
+ * Product columns are matched from the product catalog.
  */
-export function validateD9012Rows(rows: Record<string, unknown>[]): {
+export function validateEstimasiColumns(
+  headers: string[],
+  products: ProductInfo[],
+): { isValid: boolean; errors: string[]; productColumns: string[] } {
+  const errors: string[] = [];
+
+  // Check base columns
+  const missingBase = REQUIRED_BASE_COLUMNS.filter(
+    (col) => !headers.includes(col),
+  );
+  if (missingBase.length > 0) {
+    errors.push(`Kolom wajib tidak ditemukan: ${missingBase.join(", ")}.`);
+  }
+
+  // Match product columns against the known catalog
+  const productColumns = products
+    .map((p) => p.shortName)
+    .filter((name) => headers.includes(name));
+
+  const missingProducts = products
+    .map((p) => p.shortName)
+    .filter((name) => !headers.includes(name));
+
+  if (productColumns.length === 0) {
+    errors.push("Tidak ditemukan kolom produk yang cocok dengan katalog SKU.");
+  } else if (missingProducts.length > 0 && missingProducts.length < 67) {
+    // Only warn if some are missing (not all)
+    // Don't flood with all 67 missing names
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    productColumns,
+  };
+}
+
+/**
+ * Parse and validate a single store row into an EstimasiOrderRow (without computed fields).
+ */
+export function parseEstimasiRow(
+  row: Record<string, unknown>,
+  productColumns: string[],
+  products: ProductInfo[],
+  rowIndex: number,
+): {
+  data: Omit<
+    EstimasiOrderRow,
+    "cbp" | "rbp" | "rbpNet" | "totalQty" | "itemCount"
+  > | null;
+  errors: string[];
+} {
+  const errors: string[] = [];
+
+  const discRaw = Number(row["DISC %"] ?? 10);
+  const discPercent = isNaN(discRaw) ? 10 : discRaw;
+
+  // Parse product quantities
+  const qtyPerProduct: Record<string, number> = {};
+  for (const col of productColumns) {
+    const rawVal = row[col];
+    if (rawVal === "" || rawVal === null || rawVal === undefined) {
+      qtyPerProduct[col] = 0;
+    } else {
+      const num = Number(rawVal);
+      if (isNaN(num)) {
+        errors.push(
+          `Baris ${rowIndex + 1}: Kolom "${col}" harus berupa angka, ditemukan: "${rawVal}".`,
+        );
+        qtyPerProduct[col] = 0;
+      } else {
+        qtyPerProduct[col] = num;
+      }
+    }
+  }
+
+  // Also set zero for any products in catalog not in this file
+  for (const p of products) {
+    if (!(p.shortName in qtyPerProduct)) {
+      qtyPerProduct[p.shortName] = 0;
+    }
+  }
+
+  const store = String(row["STORE"] ?? "").trim();
+  if (!store) {
+    return { data: null, errors: [`Baris ${rowIndex + 1}: STORE kosong.`] };
+  }
+
+  return {
+    data: {
+      no: Number(row["NO"] ?? rowIndex + 1),
+      tanggal: String(row["TANGGAL"] ?? "").trim(),
+      salesmanCode: String(row["SALESMAN CODE"] ?? "").trim(),
+      salesmanName: String(row["SALESMAN NAME"] ?? "").trim(),
+      store,
+      storeType: String(row["STORE TYPE"] ?? "").trim(),
+      classification: String(row["CLASSIFICATION"] ?? "").trim(),
+      salesType: String(row["SALES TYPE"] ?? "Consignment").trim(),
+      remarks: String(row["REMARKS"] ?? "").trim(),
+      discPercent,
+      qtyPerProduct,
+    },
+    errors,
+  };
+}
+
+/**
+ * Validate raw Excel rows and parse them into EstimasiOrderRow data
+ * (without computed fields — call computeOrderRow() from calc.ts afterwards).
+ */
+export function validateAndParseEstimasiRows(
+  rows: Record<string, unknown>[],
+  products: ProductInfo[],
+): {
   isValid: boolean;
-  data: D9012Transaction[];
+  data: Omit<
+    EstimasiOrderRow,
+    "cbp" | "rbp" | "rbpNet" | "totalQty" | "itemCount"
+  >[];
   errors: string[];
 } {
   const errors: string[] = [];
@@ -34,72 +148,38 @@ export function validateD9012Rows(rows: Record<string, unknown>[]): {
     return {
       isValid: false,
       data: [],
-      errors: ["Sheet pertama tidak memiliki data."],
+      errors: ["Sheet tidak memiliki data."],
     };
   }
 
-  // Check for required columns using the first row's keys (normalized)
   const headers = Object.keys(rows[0]);
-  const missingColumns = REQUIRED_COLUMNS.filter(
-    (col) => !headers.includes(col),
-  );
+  const colValidation = validateEstimasiColumns(headers, products);
 
-  if (missingColumns.length > 0) {
-    errors.push(`Kolom wajib tidak ditemukan: ${missingColumns.join(", ")}.`);
+  errors.push(...colValidation.errors);
+  if (!colValidation.isValid && colValidation.productColumns.length === 0) {
     return { isValid: false, data: [], errors };
   }
 
-  // Map rows to D9012Transaction
-  const data: D9012Transaction[] = [];
-  const MAX_ERRORS = 10;
+  const productColumns = colValidation.productColumns;
+  const data: Omit<
+    EstimasiOrderRow,
+    "cbp" | "rbp" | "rbpNet" | "totalQty" | "itemCount"
+  >[] = [];
+
+  const MAX_ERRORS = 15;
 
   for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowNumber = i + 2; // Excel row number (1-indexed, +1 for header)
-
-    // Parse numeric values
-    const numericValues: Record<string, number> = {};
-    for (const col of NUMERIC_COLUMNS) {
-      const rawValue = row[col];
-      if (rawValue === "" || rawValue === null || rawValue === undefined) {
-        numericValues[col] = 0;
-      } else {
-        const num = Number(rawValue);
-        if (isNaN(num)) {
-          if (errors.length < MAX_ERRORS) {
-            errors.push(`Baris ${rowNumber}: ${col} harus berupa angka.`);
-          }
-        } else {
-          numericValues[col] = num;
-        }
-      }
+    const result = parseEstimasiRow(rows[i], productColumns, products, i);
+    if (result.errors.length > 0 && errors.length < MAX_ERRORS) {
+      errors.push(...result.errors);
     }
-
-    // Skip row if any numeric field has an error
-    if (NUMERIC_COLUMNS.some((col) => !(col in numericValues))) {
-      continue;
+    if (result.data) {
+      data.push(result.data);
     }
-
-    const transaction: D9012Transaction = {
-      dropping_date: String(row["DROPPING DATE"] ?? "").trim(),
-      outlet_code: String(row["OUTLET CODE"] ?? "").trim(),
-      outlet_name: String(row["OUTLET NAME"] ?? "").trim(),
-      product_code: String(row["PRODUCT CODE"] ?? "").trim(),
-      product_name: String(row["PRODUCT NAME"] ?? "").trim(),
-      dropping_qty: numericValues["DROPPING QTY"],
-      retur_bs_qty: numericValues["RETUR BS QTY"],
-      retur_baik_qty: numericValues["RETUR BAIK QTY"],
-      net_qty: numericValues["NET QTY"],
-    };
-
-    data.push(transaction);
   }
 
-  // If there were too many errors, add a note
   if (errors.length >= MAX_ERRORS) {
-    errors.push(
-      `... dan ${rows.length - data.length - MAX_ERRORS} error lainnya.`,
-    );
+    errors.push(`... dan error lainnya (maks ${MAX_ERRORS} ditampilkan).`);
   }
 
   return {

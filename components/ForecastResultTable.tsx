@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -10,79 +11,49 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Table2, TrendingUp, TrendingDown, Minus } from "lucide-react";
-import { ForecastResult } from "@/lib/types";
+import { Table2 } from "lucide-react";
+import { EstimasiOrderRow, ProductInfo } from "@/lib/types";
 
-type ForecastResultTableProps = {
-  data: ForecastResult[];
+type EstimasiOrderTableProps = {
+  stores: EstimasiOrderRow[];
+  products: ProductInfo[];
 };
 
-function getTrendBadge(trend: string) {
-  switch (trend) {
-    case "naik":
-      return (
-        <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-300 gap-1">
-          <TrendingUp className="h-3 w-3" />
-          Naik
-        </Badge>
-      );
-    case "turun":
-      return (
-        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-300 gap-1">
-          <TrendingDown className="h-3 w-3" />
-          Turun
-        </Badge>
-      );
-    default:
-      return (
-        <Badge className="bg-gray-100 text-gray-600 hover:bg-gray-100 border-gray-300 gap-1">
-          <Minus className="h-3 w-3" />
-          Stabil
-        </Badge>
-      );
+/** Pick up to 8 products that have non-zero qty in the filtered stores */
+function pickTopProducts(
+  stores: EstimasiOrderRow[],
+  products: ProductInfo[],
+): ProductInfo[] {
+  const totals = new Map<string, number>();
+  for (const store of stores) {
+    for (const [name, qty] of Object.entries(store.qtyPerProduct)) {
+      totals.set(name, (totals.get(name) ?? 0) + qty);
+    }
   }
+  return products.filter((p) => (totals.get(p.shortName) ?? 0) > 0).slice(0, 8);
 }
 
-function getRiskBadge(risk: string) {
-  switch (risk) {
-    case "Rendah":
-      return (
-        <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-300">
-          Rendah
-        </Badge>
-      );
-    case "Sedang":
-      return (
-        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-300">
-          Sedang
-        </Badge>
-      );
-    case "Tinggi":
-      return (
-        <Badge className="bg-red-100 text-red-800 hover:bg-red-100 border-red-300">
-          Tinggi
-        </Badge>
-      );
-    default:
-      return <Badge variant="secondary">{risk}</Badge>;
-  }
-}
+export default function EstimasiOrderTable({
+  stores,
+  products,
+}: EstimasiOrderTableProps) {
+  const displayProducts = useMemo(
+    () => pickTopProducts(stores, products),
+    [stores, products],
+  );
 
-export default function ForecastResultTable({
-  data,
-}: ForecastResultTableProps) {
-  if (data.length === 0) {
+  if (stores.length === 0) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Table2 className="h-5 w-5" />
-            Hasil Forecasting
+            Data Estimasi Order
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground text-sm py-8 text-center">
-            Hasil forecasting akan tampil setelah user klik Generate Forecast.
+            Data estimasi akan tampil setelah upload dan klik Hitung Estimasi.
           </p>
         </CardContent>
       </Card>
@@ -94,92 +65,120 @@ export default function ForecastResultTable({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Table2 className="h-5 w-5" />
-          Hasil Forecasting
+          Data Estimasi Order
           <span className="text-sm font-normal text-muted-foreground">
-            ({data.length} item)
+            ({stores.length} toko)
           </span>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="rounded-md border overflow-x-auto">
+        <div className="rounded-md border overflow-x-auto max-h-[70vh]">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">Outlet Code</TableHead>
-                <TableHead className="whitespace-nowrap">Outlet Name</TableHead>
-                <TableHead className="whitespace-nowrap">
-                  Product Code
+                <TableHead className="whitespace-nowrap sticky left-0 bg-background z-10">
+                  No
                 </TableHead>
-                <TableHead className="whitespace-nowrap">
-                  Product Name
+                <TableHead className="whitespace-nowrap sticky left-[40px] bg-background z-10 min-w-[160px]">
+                  Store
+                </TableHead>
+                <TableHead className="whitespace-nowrap">Type</TableHead>
+                <TableHead className="whitespace-nowrap">Salesman</TableHead>
+                {displayProducts.map((p) => (
+                  <TableHead
+                    key={p.shortName}
+                    className="whitespace-nowrap text-right text-xs"
+                  >
+                    {p.shortName}
+                  </TableHead>
+                ))}
+                <TableHead className="whitespace-nowrap text-right">
+                  QTY
                 </TableHead>
                 <TableHead className="whitespace-nowrap text-right">
-                  Total Dropping
+                  CBP
                 </TableHead>
                 <TableHead className="whitespace-nowrap text-right">
-                  Total Retur
+                  RBP
                 </TableHead>
                 <TableHead className="whitespace-nowrap text-right">
-                  Total Net
+                  RBP Net
                 </TableHead>
                 <TableHead className="whitespace-nowrap text-right">
-                  Avg Net
+                  # Items
                 </TableHead>
-                <TableHead className="whitespace-nowrap text-right">
-                  Return Rate
-                </TableHead>
-                <TableHead className="whitespace-nowrap text-right">
-                  Forecast Demand
-                </TableHead>
-                <TableHead className="whitespace-nowrap text-right">
-                  Safety Stock
-                </TableHead>
-                <TableHead className="whitespace-nowrap text-right">
-                  Recommended Qty
-                </TableHead>
-                <TableHead className="whitespace-nowrap">Risk Level</TableHead>
-                <TableHead className="whitespace-nowrap">Tren</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.map((row, idx) => (
-                <TableRow key={`${row.outlet_code}-${row.product_code}-${idx}`}>
-                  <TableCell className="font-mono text-xs">
-                    {row.outlet_code}
+              {stores.map((store, idx) => (
+                <TableRow key={idx}>
+                  <TableCell className="sticky left-0 bg-background">
+                    {store.no}
                   </TableCell>
-                  <TableCell>{row.outlet_name}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    {row.product_code}
+                  <TableCell className="font-medium sticky left-[40px] bg-background max-w-[160px] truncate">
+                    {store.store}
                   </TableCell>
-                  <TableCell>{row.product_name}</TableCell>
-                  <TableCell className="text-right">
-                    {row.total_dropping_qty.toLocaleString()}
+                  <TableCell>
+                    <Badge variant="secondary" className="text-xs">
+                      {store.storeType}
+                    </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    {row.total_retur_qty.toLocaleString()}
+                  <TableCell className="text-xs">
+                    {store.salesmanName}
                   </TableCell>
-                  <TableCell className="text-right">
-                    {row.total_net_qty.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {row.avg_net_qty.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {(row.return_rate * 100).toFixed(1)}%
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {row.forecast_demand.toLocaleString()}
+                  {displayProducts.map((p) => (
+                    <TableCell key={p.shortName} className="text-right text-xs">
+                      {store.qtyPerProduct[p.shortName] ?? 0}
+                    </TableCell>
+                  ))}
+                  <TableCell className="text-right font-semibold">
+                    {store.totalQty}
                   </TableCell>
                   <TableCell className="text-right">
-                    {row.safety_stock.toLocaleString()}
+                    {store.cbp.toLocaleString()}
                   </TableCell>
-                  <TableCell className="text-right font-bold">
-                    {row.recommended_qty.toLocaleString()}
+                  <TableCell className="text-right">
+                    {store.rbp.toLocaleString()}
                   </TableCell>
-                  <TableCell>{getRiskBadge(row.risk_level)}</TableCell>
-                  <TableCell>{getTrendBadge(row.trend)}</TableCell>
+                  <TableCell className="text-right">
+                    {store.rbpNet.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {store.itemCount}
+                  </TableCell>
                 </TableRow>
               ))}
+
+              {/* Grand Total Row */}
+              <TableRow className="bg-muted/50 font-bold">
+                <TableCell className="sticky left-0 bg-muted/50" colSpan={4}>
+                  TOTAL ({stores.length} toko)
+                </TableCell>
+                {displayProducts.map((p) => {
+                  const total = stores.reduce(
+                    (s, r) => s + (r.qtyPerProduct[p.shortName] ?? 0),
+                    0,
+                  );
+                  return (
+                    <TableCell key={p.shortName} className="text-right text-xs">
+                      {total}
+                    </TableCell>
+                  );
+                })}
+                <TableCell className="text-right">
+                  {stores.reduce((s, r) => s + r.totalQty, 0)}
+                </TableCell>
+                <TableCell className="text-right">
+                  {stores.reduce((s, r) => s + r.cbp, 0).toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  {stores.reduce((s, r) => s + r.rbp, 0).toLocaleString()}
+                </TableCell>
+                <TableCell className="text-right">
+                  {stores.reduce((s, r) => s + r.rbpNet, 0).toLocaleString()}
+                </TableCell>
+                <TableCell />
+              </TableRow>
             </TableBody>
           </Table>
         </div>

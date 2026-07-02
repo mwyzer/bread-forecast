@@ -9,115 +9,115 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Filter, Search, ShieldAlert, ArrowUpDown } from "lucide-react";
+import { Filter, Search, Store, ArrowUpDown } from "lucide-react";
 
-type ForecastFilterProps = {
-  searchOutlet: string;
-  searchProduct: string;
-  riskLevel: string;
+type EstimasiFilterProps = {
+  searchStore: string;
+  storeType: string;
+  salesmanCode: string;
   sortBy: string;
-  onSearchOutletChange: (value: string) => void;
-  onSearchProductChange: (value: string) => void;
-  onRiskLevelChange: (value: string) => void;
+  storeTypes: string[];
+  salesmanCodes: { code: string; name: string }[];
+  onSearchStoreChange: (value: string) => void;
+  onStoreTypeChange: (value: string) => void;
+  onSalesmanCodeChange: (value: string) => void;
   onSortByChange: (value: string) => void;
 };
 
-export default function ForecastFilter({
-  searchOutlet,
-  searchProduct,
-  riskLevel,
+export default function EstimasiFilter({
+  searchStore,
+  storeType,
+  salesmanCode,
   sortBy,
-  onSearchOutletChange,
-  onSearchProductChange,
-  onRiskLevelChange,
+  storeTypes,
+  salesmanCodes,
+  onSearchStoreChange,
+  onStoreTypeChange,
+  onSalesmanCodeChange,
   onSortByChange,
-}: ForecastFilterProps) {
+}: EstimasiFilterProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Filter className="h-5 w-5" />
-          Filter & Sort Forecast
+          Filter & Sort
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Search Outlet */}
+          {/* Search Store */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               <Search className="h-3.5 w-3.5" />
-              Search Outlet
+              Cari Toko
             </label>
             <Input
-              placeholder="Outlet code / name..."
-              value={searchOutlet}
-              onChange={(e) => onSearchOutletChange(e.target.value)}
+              placeholder="Nama toko..."
+              value={searchStore}
+              onChange={(e) => onSearchStoreChange(e.target.value)}
               className="h-9"
             />
           </div>
 
-          {/* Search Product */}
+          {/* Store Type */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-              <Search className="h-3.5 w-3.5" />
-              Search Product
+              <Store className="h-3.5 w-3.5" />
+              Store Type
             </label>
-            <Input
-              placeholder="Product code / name..."
-              value={searchProduct}
-              onChange={(e) => onSearchProductChange(e.target.value)}
-              className="h-9"
-            />
-          </div>
-
-          {/* Risk Level */}
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-              <ShieldAlert className="h-3.5 w-3.5" />
-              Risk Level
-            </label>
-            <Select value={riskLevel} onValueChange={onRiskLevelChange}>
+            <Select value={storeType} onValueChange={onStoreTypeChange}>
               <SelectTrigger className="h-9">
-                <SelectValue placeholder="Risk Level" />
+                <SelectValue placeholder="Semua" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Semua">Semua</SelectItem>
-                <SelectItem value="Rendah">Rendah</SelectItem>
-                <SelectItem value="Sedang">Sedang</SelectItem>
-                <SelectItem value="Tinggi">Tinggi</SelectItem>
+                {storeTypes.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          {/* Sort By */}
+          {/* Salesman */}
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+              <Store className="h-3.5 w-3.5" />
+              Salesman
+            </label>
+            <Select value={salesmanCode} onValueChange={onSalesmanCodeChange}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Semua" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Semua">Semua</SelectItem>
+                {salesmanCodes.map((s) => (
+                  <SelectItem key={s.code} value={s.code}>
+                    {s.name} ({s.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Sort */}
           <div className="space-y-2">
             <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
               <ArrowUpDown className="h-3.5 w-3.5" />
-              Sort By
+              Urutkan
             </label>
             <Select value={sortBy} onValueChange={onSortByChange}>
               <SelectTrigger className="h-9">
-                <SelectValue placeholder="Sort By" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="return_rate_desc">
-                  Return Rate (Highest)
-                </SelectItem>
-                <SelectItem value="recommended_qty_desc">
-                  Recommended Qty (Highest)
-                </SelectItem>
-                <SelectItem value="total_retur_desc">
-                  Total Retur (Highest)
-                </SelectItem>
-                <SelectItem value="total_dropping_desc">
-                  Total Dropping (Highest)
-                </SelectItem>
-                <SelectItem value="outlet_name_asc">
-                  Outlet Name (A-Z)
-                </SelectItem>
-                <SelectItem value="product_name_asc">
-                  Product Name (A-Z)
-                </SelectItem>
+                <SelectItem value="qty_desc">QTY Terbesar</SelectItem>
+                <SelectItem value="qty_asc">QTY Terkecil</SelectItem>
+                <SelectItem value="cbp_desc">CBP Terbesar</SelectItem>
+                <SelectItem value="items_desc"># Items Terbanyak</SelectItem>
+                <SelectItem value="store_asc">Nama Toko A-Z</SelectItem>
               </SelectContent>
             </Select>
           </div>
